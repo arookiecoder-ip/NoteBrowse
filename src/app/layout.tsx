@@ -46,7 +46,7 @@ export default function RootLayout({
               arookiecoder-ip
             </a>
           </div>
-          <span>Last Patched: Fri, 17 Apr 2026 15:49 IST</span>
+          <span>© {new Date().getFullYear()} NoteBrowse — Encrypted notebooks, zero accounts.</span>
         </footer>
       </body>
     </html>
