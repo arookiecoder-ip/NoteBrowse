@@ -502,7 +502,9 @@ body {
 
 @media (max-width: 768px) {
   .nb-grid-split {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: stretch;
   }
 }
 
