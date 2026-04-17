@@ -7,7 +7,7 @@ services:
     container_name: notebrowse-server
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://notebrowse_user:notebrowse_pass@db:5432/notebrowse?schema=public
