@@ -106,19 +106,10 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
     }
   }
 
-  // Session guard for editor pages only
-  if (pathname.startsWith("/editor/")) {
-    const session = await verifySessionCookie(request.cookies.get(SESSION_COOKIE)?.value);
-
-    if (!session) {
-      return withHeaders(NextResponse.redirect(new URL("/notebook/unlock", request.url)));
-    }
-
-    const slug = pathname.split("/")[2];
-    if (slug && slug !== session.slug) {
-      return withHeaders(NextResponse.redirect(new URL("/notebook/unlock", request.url)));
-    }
-  }
+  // NOTE: Session guard for /editor/* pages is now handled server-side
+  // in src/app/editor/[slug]/page.tsx, which checks notebook existence
+  // and session validity to show the appropriate UI (editor, password
+  // form, or "not found").
 
   return withHeaders(NextResponse.next());
 }
