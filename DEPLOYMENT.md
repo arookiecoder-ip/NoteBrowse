@@ -28,7 +28,7 @@ Clone your repository to the server. We recommend keeping distinct apps in `/opt
 sudo mkdir -p /opt/notebrowse
 # Clone your code into the directory
 # Replace with your actual repository URL:
-sudo git clone https://github.com/your-username/notebrowse.git /opt/notebrowse
+sudo git clone https://github.com/arookiecoder-ip/NoteBrowse /opt/notebrowse
 
 cd /opt/notebrowse
 ```
