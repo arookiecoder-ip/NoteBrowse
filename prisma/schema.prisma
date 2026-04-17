@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Notebook {
+  id                 String   @id @default(cuid())
+  slug               String   @unique
+  mode               String
+  passwordHash       String
+  contentCiphertext  String
+  contentNonce       String
+  contentKeyVersion  Int      @default(1)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  auditLogs          AuditLog[]
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  eventType  String
+  notebookId String
+  sessionId  String
+  ipHash     String
+  timestamp  DateTime @default(now())
+  notebook   Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+
+  @@index([notebookId, timestamp])
+}
