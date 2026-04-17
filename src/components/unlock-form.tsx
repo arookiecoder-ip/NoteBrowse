@@ -13,7 +13,7 @@ export function UnlockForm() {
     setSubmitting(true);
     setMessage(null);
 
-    const normalizedSlug = slug.trim().toLowerCase().replace(/^\/notebook\//i, "").replace(/^\//, "");
+    const normalizedSlug = slug.trim().replace(/^\/notebook\//i, "").replace(/^\//, "");
 
     try {
       const res = await fetch("/api/notebooks/unlock", {
@@ -44,12 +44,12 @@ export function UnlockForm() {
     <form onSubmit={onSubmit} className="nb-form" style={{ marginTop: 24 }}>
       <div className="nb-field">
         <label htmlFor="notebook-slug" className="nb-field__label">Notebook Custom URL</label>
-        <input id="notebook-slug" className="nb-input" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="my-notebook" autoComplete="off" />
+        <input id="notebook-slug" className="nb-input" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="my-notebook" autoComplete="off" suppressHydrationWarning />
       </div>
 
       <div className="nb-field">
         <label htmlFor="notebook-password" className="nb-field__label">Password</label>
-        <input id="notebook-password" type="password" className="nb-input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter notebook password" autoComplete="current-password" />
+        <input id="notebook-password" type="password" className="nb-input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter notebook password" autoComplete="current-password" suppressHydrationWarning />
       </div>
 
       <button type="submit" disabled={submitting || !slug.trim()} className="nb-btn nb-btn--primary nb-btn--full">
