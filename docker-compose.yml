@@ -35,9 +35,10 @@ services:
     environment:
       - DATABASE_URL=postgresql://notebrowse_user:notebrowse_pass@db:5432/notebrowse?schema=public
     volumes:
-      - ./prisma:/prisma
+      - ./:/app
+    working_dir: /app
     command: >
-      sh -c "npx prisma db push --schema=/prisma/schema.prisma --accept-data-loss"
+      sh -c "npx -y prisma db push --accept-data-loss"
     networks:
       - notebrowse_net
 
