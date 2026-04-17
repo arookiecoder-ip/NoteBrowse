@@ -88,13 +88,13 @@ export function CreateForm() {
       {mode === "custom" && (
         <div className="nb-field">
           <label htmlFor="slug" className="nb-field__label">Notebook custom URL Text</label>
-          <input id="slug" className="nb-input" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="project-notes" />
+          <input id="slug" autoComplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other" className="nb-input" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="project-notes" />
         </div>
       )}
 
       <div className="nb-field">
         <label htmlFor="password" className="nb-field__label">Password</label>
-        <input id="password" type="password" className="nb-input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter a strong password" />
+        <input id="password" type="password" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" className="nb-input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter a strong password" />
       </div>
 
       <div className="nb-field">
