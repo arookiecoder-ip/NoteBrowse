@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getPrisma } from "@/lib/prisma";
-import { decrypt, encrypt } from "@/lib/crypto";
+import { decrypt, encrypt, hashPassword, verifyPassword } from "@/lib/crypto";
 import { verifySessionCookie, SESSION_COOKIE } from "@/lib/auth";
 import { createHash } from "node:crypto";
 
@@ -84,9 +84,12 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
 
-  const content = typeof body.content === "string" ? body.content : "";
-  if (!content) {
-    return NextResponse.json({ error: "Content is required." }, { status: 400 });
+  const content = typeof body.content === "string" ? body.content : undefined;
+  const password = typeof body.password === "string" ? body.password : undefined;
+  const oldPassword = typeof body.oldPassword === "string" ? body.oldPassword : undefined;
+
+  if (content === undefined && password === undefined) {
+    return NextResponse.json({ error: "No fields to update." }, { status: 400 });
   }
 
   const prisma = await getPrisma();
@@ -95,15 +98,33 @@ export async function PATCH(
     return NextResponse.json({ error: "Notebook not found." }, { status: 404 });
   }
 
-  const encrypted = encrypt(content);
+  const dataToUpdate: any = {};
+
+  if (content !== undefined) {
+    const encrypted = encrypt(content);
+    dataToUpdate.contentCiphertext = encrypted.ciphertext;
+    dataToUpdate.contentNonce = encrypted.nonce;
+    dataToUpdate.contentKeyVersion = encrypted.keyVersion;
+  }
+
+  if (password !== undefined) {
+    if (!oldPassword) {
+      return NextResponse.json({ error: "Old password is required to set a new password." }, { status: 400 });
+    }
+    const isValid = await verifyPassword(oldPassword, notebook.passwordHash);
+    if (!isValid) {
+      return NextResponse.json({ error: "Incorrect old password." }, { status: 403 });
+    }
+
+    if (password.trim() === "") {
+      return NextResponse.json({ error: "New password cannot be empty." }, { status: 400 });
+    }
+    dataToUpdate.passwordHash = await hashPassword(password);
+  }
 
   await prisma.notebook.update({
     where: { slug },
-    data: {
-      contentCiphertext: encrypted.ciphertext,
-      contentNonce: encrypted.nonce,
-      contentKeyVersion: encrypted.keyVersion,
-    },
+    data: dataToUpdate,
   });
 
   const ip = getIp(request);

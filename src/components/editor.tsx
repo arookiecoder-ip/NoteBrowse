@@ -20,6 +20,13 @@ export function Editor({ slug }: { slug: string }) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -70,6 +77,42 @@ export function Editor({ slug }: { slug: string }) {
       setSuccess("Changes saved.");
     }
     setSaving(false);
+  }
+
+  async function handlePasswordSave() {
+    if (!oldPassword) {
+      setPasswordError("Old password is required.");
+      return;
+    }
+    if (!newPassword) {
+      setPasswordError("New password cannot be empty.");
+      return;
+    }
+    setSavingPassword(true);
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    const csrf = readCookie("nb_csrf");
+    const res = await fetch(`/api/notebooks/${slug}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(csrf ? { "x-csrf-token": csrf } : {}),
+      },
+      body: JSON.stringify({ oldPassword, password: newPassword }),
+    });
+
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+
+    if (!res.ok) {
+      setPasswordError(data.error ?? "Failed to update password.");
+    } else {
+      setPasswordSuccess("Password updated successfully.");
+      setOldPassword("");
+      setNewPassword("");
+      setTimeout(() => setShowChangePassword(false), 1500);
+    }
+    setSavingPassword(false);
   }
 
   async function handleDelete() {
@@ -126,6 +169,9 @@ export function Editor({ slug }: { slug: string }) {
         <button type="button" onClick={handleSave} disabled={saving || deleting} className="nb-btn nb-btn--primary">
           {saving ? "Saving..." : "Save Changes"}
         </button>
+        <button type="button" onClick={() => setShowChangePassword(true)} disabled={saving || deleting} className="nb-btn nb-btn--secondary">
+          Change Password
+        </button>
         <button type="button" onClick={() => setShowDelete(true)} disabled={saving || deleting} className="nb-btn nb-btn--danger">
           Delete Notebook
         </button>
@@ -133,6 +179,65 @@ export function Editor({ slug }: { slug: string }) {
 
       {error && <div className="nb-alert nb-alert--error">{error}</div>}
       {success && <div className="nb-alert nb-alert--success">{success}</div>}
+
+      {showChangePassword && (
+        <div className="nb-overlay" role="dialog" aria-modal="true">
+          <div className="nb-modal">
+            <h2 className="nb-heading-lg">Change Password</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 8 }}>
+              <div className="nb-field">
+                <label htmlFor="old-password" className="nb-field__label">Old Password</label>
+                <input
+                  id="old-password"
+                  type="password"
+                  className="nb-input"
+                  placeholder="Enter current password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                />
+              </div>
+              <div className="nb-field">
+                <label htmlFor="new-password" className="nb-field__label">New Password</label>
+                <input
+                  id="new-password"
+                  type="password"
+                  className="nb-input"
+                  placeholder="Enter a new secure password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            {passwordError && <div className="nb-alert nb-alert--error">{passwordError}</div>}
+            {passwordSuccess && <div className="nb-alert nb-alert--success">{passwordSuccess}</div>}
+
+            <div className="nb-modal__actions" style={{ marginTop: 12 }}>
+              <button 
+                type="button" 
+                onClick={() => {
+                  setShowChangePassword(false);
+                  setPasswordError(null);
+                  setPasswordSuccess(null);
+                  setOldPassword("");
+                  setNewPassword("");
+                }} 
+                className="nb-btn nb-btn--secondary"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                onClick={handlePasswordSave} 
+                disabled={savingPassword || !oldPassword || !newPassword} 
+                className="nb-btn nb-btn--primary"
+              >
+                {savingPassword ? "Updating..." : "Update Password"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showDelete && (
         <div className="nb-overlay" role="dialog" aria-modal="true">
