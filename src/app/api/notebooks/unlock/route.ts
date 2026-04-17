@@ -13,7 +13,7 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
 
-  const slug = typeof body.slug === "string" ? body.slug.trim().toLowerCase() : "";
+  const slug = typeof body.slug === "string" ? body.slug.trim() : "";
   const password = typeof body.password === "string" ? body.password : "";
 
   if (!slug || !password) {

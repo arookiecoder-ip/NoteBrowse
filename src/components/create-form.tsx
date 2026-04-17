@@ -75,11 +75,11 @@ export function CreateForm() {
         <span className="nb-field__label">Link mode</span>
         <div className="nb-radio-group">
           <div className="nb-radio-option">
-            <input type="radio" name="mode" id="mode-custom" value="custom" checked={mode === "custom"} onChange={() => setMode("custom")} />
+            <input type="radio" name="mode" id="mode-custom" value="custom" checked={mode === "custom"} onChange={() => setMode("custom")} suppressHydrationWarning />
             <label htmlFor="mode-custom" className="nb-radio-option__label">✏️ Custom link</label>
           </div>
           <div className="nb-radio-option">
-            <input type="radio" name="mode" id="mode-random" value="random" checked={mode === "random"} onChange={() => setMode("random")} />
+            <input type="radio" name="mode" id="mode-random" value="random" checked={mode === "random"} onChange={() => setMode("random")} suppressHydrationWarning />
             <label htmlFor="mode-random" className="nb-radio-option__label">🎲 Random secure</label>
           </div>
         </div>
@@ -88,18 +88,18 @@ export function CreateForm() {
       {mode === "custom" && (
         <div className="nb-field">
           <label htmlFor="slug" className="nb-field__label">Notebook custom URL Text</label>
-          <input id="slug" autoComplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other" className="nb-input" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="project-notes" />
+          <input id="slug" autoComplete="off" data-1p-ignore="true" className="nb-input" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="my-awesome-notebook" maxLength={64} suppressHydrationWarning />
         </div>
       )}
 
       <div className="nb-field">
         <label htmlFor="password" className="nb-field__label">Password</label>
-        <input id="password" type="password" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" className="nb-input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter a strong password" />
+        <input id="password" type="password" autoComplete="new-password" data-lpignore="true" data-1p-ignore="true" className="nb-input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter a strong password" suppressHydrationWarning />
       </div>
 
       <div className="nb-field">
         <label htmlFor="content" className="nb-field__label">Content</label>
-        <textarea id="content" className="nb-textarea" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write the first entry for this notebook..." rows={6} />
+        <textarea id="content" className="nb-textarea" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write the first entry for this notebook..." rows={6} suppressHydrationWarning />
       </div>
 
       <button type="submit" disabled={status === "saving"} className="nb-btn nb-btn--primary nb-btn--full">

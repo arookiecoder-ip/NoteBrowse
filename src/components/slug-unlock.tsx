@@ -41,7 +41,7 @@ export function SlugUnlock({ slug }: { slug: string }) {
     <form onSubmit={onSubmit} className="nb-form" style={{ marginTop: 24 }}>
       <div className="nb-field">
         <label htmlFor="slug-password" className="nb-field__label">Password</label>
-        <input id="slug-password" type="password" className="nb-input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter notebook password" autoFocus autoComplete="current-password" />
+        <input id="slug-password" type="password" className="nb-input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter notebook password" autoFocus autoComplete="current-password" suppressHydrationWarning />
       </div>
 
       <button type="submit" disabled={submitting || !password} className="nb-btn nb-btn--primary nb-btn--full">
