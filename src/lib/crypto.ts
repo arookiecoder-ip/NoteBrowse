@@ -4,11 +4,18 @@ import {
   createHmac,
   randomBytes,
   scrypt,
+  ScryptOptions,
   timingSafeEqual,
 } from "node:crypto";
-import { promisify } from "node:util";
 
-const scryptAsync = promisify(scrypt);
+function scryptAsync(password: string, salt: Buffer, keylen: number, options: ScryptOptions): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    scrypt(password, salt, keylen, options, (err, derivedKey) => {
+      if (err) reject(err);
+      else resolve(derivedKey);
+    });
+  });
+}
 
 // ── AES-256-GCM encryption ──────────────────────────────────────────
 
@@ -70,7 +77,7 @@ const SCRYPT_OPTS = { N: 8192, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16);
-  const derived = (await scryptAsync(password, salt, 64, SCRYPT_OPTS)) as Buffer;
+  const derived = await scryptAsync(password, salt, 64, SCRYPT_OPTS);
   return `scrypt$${salt.toString("base64")}$${derived.toString("base64")}`;
 }
 
@@ -80,7 +87,7 @@ export async function verifyPassword(password: string, stored: string): Promise<
 
   const salt = Buffer.from(saltB64, "base64");
   const expected = Buffer.from(derivedB64, "base64");
-  const actual = (await scryptAsync(password, salt, expected.length, SCRYPT_OPTS)) as Buffer;
+  const actual = await scryptAsync(password, salt, expected.length, SCRYPT_OPTS);
 
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
