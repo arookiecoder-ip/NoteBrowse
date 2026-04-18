@@ -56,13 +56,26 @@ export async function GET(
     },
   });
 
-  const content = decrypt({
-    ciphertext: notebook.contentCiphertext,
-    nonce: notebook.contentNonce,
-    keyVersion: notebook.contentKeyVersion,
-  });
+  let content = "";
+  let decryptionWarning: string | undefined;
 
-  return NextResponse.json({ slug, content, updatedAt: notebook.updatedAt.toISOString() });
+  try {
+    content = decrypt({
+      ciphertext: notebook.contentCiphertext,
+      nonce: notebook.contentNonce,
+      keyVersion: notebook.contentKeyVersion,
+    });
+  } catch (err) {
+    console.error(`[decrypt] Failed for slug="${slug}":`, (err as Error).message);
+    decryptionWarning = "Content could not be decrypted. It may have been created with a different encryption key. You can save new content to overwrite.";
+  }
+
+  return NextResponse.json({
+    slug,
+    content,
+    updatedAt: notebook.updatedAt.toISOString(),
+    ...(decryptionWarning ? { warning: decryptionWarning } : {}),
+  });
 }
 
 // ── PATCH: update notebook content ──────────────────────────────────
