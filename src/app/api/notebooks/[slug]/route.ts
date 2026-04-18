@@ -67,7 +67,7 @@ export async function GET(
     });
   } catch (err) {
     console.error(`[decrypt] Failed for slug="${slug}":`, (err as Error).message);
-    decryptionWarning = "Content could not be decrypted. It may have been created with a different encryption key. You can save new content to overwrite.";
+    decryptionWarning = `Content could not be decrypted. It may have been created with a different encryption key. Exact Error: ${(err as Error).message}`;
   }
 
   return NextResponse.json({

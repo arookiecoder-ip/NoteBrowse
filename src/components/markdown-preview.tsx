@@ -21,7 +21,17 @@ export function MarkdownPreview({ content }: { content: string }) {
 
   return (
     <div className="nb-markdown">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      <ReactMarkdown 
+        remarkPlugins={[remarkGfm]}
+        components={{
+          img: ({ node, ...props }) => {
+            if (!props.src) return null;
+            return <img {...props} alt={props.alt || ""} />;
+          }
+        }}
+      >
+        {content}
+      </ReactMarkdown>
     </div>
   );
 }

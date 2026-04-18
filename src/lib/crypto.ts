@@ -58,7 +58,7 @@ export function decrypt(record: CiphertextRecord): string {
   const nonce = Buffer.from(record.nonce, "base64");
   const payload = Buffer.from(record.ciphertext, "base64");
 
-  if (payload.length <= TAG_BYTES) throw new Error("Invalid ciphertext");
+  if (payload.length < TAG_BYTES) throw new Error("Invalid ciphertext");
 
   const encrypted = payload.subarray(0, payload.length - TAG_BYTES);
   const tag = payload.subarray(payload.length - TAG_BYTES);

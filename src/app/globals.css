@@ -1357,7 +1357,9 @@ body {
   font-size: 0.85rem;
   line-height: 1.7;
   min-height: 380px;
-  resize: vertical;
+  max-height: 600px;
+  resize: none;
+  overflow-y: auto;
   tab-size: 2;
   letter-spacing: 0.01em;
 }
@@ -1409,6 +1411,15 @@ body {
   .nb-editor-header {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .nb-editor-tabs {
+    width: 100%;
+  }
+
+  .nb-editor-tab {
+    flex: 1;
+    justify-content: center;
   }
 
   .nb-md-toolbar {
