@@ -2,18 +2,40 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getPrisma } from "@/lib/prisma";
 import { decrypt, encrypt, hashPassword, verifyPassword } from "@/lib/crypto";
-import { verifySessionCookie, SESSION_COOKIE } from "@/lib/auth";
+import { verifySessionCookie, signSessionCookie, SESSION_COOKIE, CSRF_COOKIE, IDLE_TIMEOUT_MS } from "@/lib/auth";
 import { createHash } from "node:crypto";
 
-async function getSession(slug: string) {
+function refreshCookies(response: NextResponse, slug: string, csrfToken: string | undefined) {
+  const expiresAt = Date.now() + IDLE_TIMEOUT_MS;
+  response.cookies.set(SESSION_COOKIE, signSessionCookie({ slug, expiresAt }), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    expires: new Date(expiresAt),
+  });
+
+  if (csrfToken) {
+    response.cookies.set(CSRF_COOKIE, csrfToken, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      expires: new Date(expiresAt),
+    });
+  }
+}
+
+async function getSessionContext(slug: string) {
   const cookieStore = await cookies();
   const raw = cookieStore.get(SESSION_COOKIE)?.value;
+  const csrfToken = cookieStore.get(CSRF_COOKIE)?.value;
   const session = verifySessionCookie(raw);
 
   if (!session || session.slug !== slug) {
     return null;
   }
-  return session;
+  return { session, csrfToken };
 }
 
 function hashIp(ip: string): string {
@@ -35,8 +57,8 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> },
 ): Promise<Response> {
   const { slug } = await params;
-  const session = await getSession(slug);
-  if (!session) {
+  const context = await getSessionContext(slug);
+  if (!context) {
     return NextResponse.json({ error: "Session expired." }, { status: 401 });
   }
 
@@ -70,12 +92,14 @@ export async function GET(
     decryptionWarning = `Content could not be decrypted. It may have been created with a different encryption key. Exact Error: ${(err as Error).message}`;
   }
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     slug,
     content,
     updatedAt: notebook.updatedAt.toISOString(),
     ...(decryptionWarning ? { warning: decryptionWarning } : {}),
   });
+  refreshCookies(response, slug, context.csrfToken);
+  return response;
 }
 
 // ── PATCH: update notebook content ──────────────────────────────────
@@ -85,8 +109,8 @@ export async function PATCH(
   { params }: { params: Promise<{ slug: string }> },
 ): Promise<Response> {
   const { slug } = await params;
-  const session = await getSession(slug);
-  if (!session) {
+  const context = await getSessionContext(slug);
+  if (!context) {
     return NextResponse.json({ error: "Session expired." }, { status: 401 });
   }
 
@@ -150,7 +174,9 @@ export async function PATCH(
     },
   });
 
-  return NextResponse.json({ saved: true, updatedAt: new Date().toISOString() });
+  const response = NextResponse.json({ saved: true, updatedAt: new Date().toISOString() });
+  refreshCookies(response, slug, context.csrfToken);
+  return response;
 }
 
 // ── DELETE: permanently delete notebook ─────────────────────────────
@@ -160,8 +186,8 @@ export async function DELETE(
   { params }: { params: Promise<{ slug: string }> },
 ): Promise<Response> {
   const { slug } = await params;
-  const session = await getSession(slug);
-  if (!session) {
+  const context = await getSessionContext(slug);
+  if (!context) {
     return NextResponse.json({ error: "Session expired." }, { status: 401 });
   }
 

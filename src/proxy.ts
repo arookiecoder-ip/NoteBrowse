@@ -100,6 +100,12 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
       const csrfCookie = request.cookies.get(CSRF_COOKIE)?.value ?? null;
       const csrfHeader = request.headers.get("x-csrf-token");
 
+      const sessionCookie = request.cookies.get(SESSION_COOKIE)?.value ?? null;
+
+      if (!csrfCookie || !sessionCookie) {
+        return withHeaders(NextResponse.json({ error: "Session expired. Please unlock again." }, { status: 401 }));
+      }
+
       if (!verifyCsrfToken(csrfHeader, csrfCookie)) {
         return withHeaders(NextResponse.json({ error: "CSRF validation failed." }, { status: 403 }));
       }

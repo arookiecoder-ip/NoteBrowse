@@ -5,7 +5,7 @@ import { hmacSign, hmacVerify } from "./crypto";
 
 export const SESSION_COOKIE = "nb_session";
 export const CSRF_COOKIE = "nb_csrf";
-export const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+export const IDLE_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
 
 export interface SessionPayload {
   slug: string;
