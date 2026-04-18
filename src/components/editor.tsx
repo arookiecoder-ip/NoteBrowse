@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MarkdownPreview } from "./markdown-preview";
+import { MarkdownToolbar } from "./markdown-toolbar";
 
 function readCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -11,6 +13,8 @@ function readCookie(name: string): string | null {
   return null;
 }
 
+type EditorTab = "write" | "preview";
+
 export function Editor({ slug }: { slug: string }) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
@@ -19,6 +23,8 @@ export function Editor({ slug }: { slug: string }) {
   const [showDelete, setShowDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<EditorTab>("write");
+  const [warning, setWarning] = useState<string | null>(null);
 
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
@@ -33,7 +39,7 @@ export function Editor({ slug }: { slug: string }) {
     fetch(`/api/notebooks/${slug}`)
       .then(async (res) => {
         if (cancelled) return;
-        const data = (await res.json()) as { content?: string; error?: string };
+        const data = (await res.json()) as { content?: string; error?: string; warning?: string };
 
         if (!res.ok) {
           setError(data.error ?? "Notebook not found.");
@@ -42,6 +48,7 @@ export function Editor({ slug }: { slug: string }) {
         }
 
         setContent(data.content ?? "");
+        if (data.warning) setWarning(data.warning);
         setLoading(false);
       })
       .catch(() => {
@@ -160,12 +167,68 @@ export function Editor({ slug }: { slug: string }) {
 
   return (
     <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 20 }}>
-      <div className="nb-field">
-        <label htmlFor="editor-content" className="nb-field__label">Content</label>
-        <textarea id="editor-content" className="nb-textarea" value={content} onChange={(e) => setContent(e.target.value)} rows={16} style={{ minHeight: 300 }} />
+      {/* ── Tab Switcher + Toolbar ── */}
+      <div className="nb-editor-header">
+        <div className="nb-editor-tabs" role="tablist" aria-label="Editor mode">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "write"}
+            className={`nb-editor-tab ${activeTab === "write" ? "nb-editor-tab--active" : ""}`}
+            onClick={() => setActiveTab("write")}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+            Write
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "preview"}
+            className={`nb-editor-tab ${activeTab === "preview" ? "nb-editor-tab--active" : ""}`}
+            onClick={() => setActiveTab("preview")}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            Preview
+          </button>
+        </div>
+
+        {activeTab === "write" && (
+          <MarkdownToolbar
+            textareaId="editor-content"
+            content={content}
+            onContentChange={setContent}
+          />
+        )}
       </div>
 
-      <div style={{ display: "flex", gap: 12 }}>
+      {/* ── Editor / Preview Panel ── */}
+      <div className="nb-editor-panel">
+        {activeTab === "write" ? (
+          <div className="nb-field">
+            <textarea
+              id="editor-content"
+              className="nb-textarea nb-textarea--editor"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={16}
+              placeholder="# Start writing markdown...&#10;&#10;Use **bold**, _italic_, `code`, and more."
+              spellCheck={false}
+            />
+          </div>
+        ) : (
+          <div className="nb-preview-pane">
+            <MarkdownPreview content={content} />
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <button type="button" onClick={handleSave} disabled={saving || deleting} className="nb-btn nb-btn--primary">
           {saving ? "Saving..." : "Save Changes"}
         </button>
@@ -177,6 +240,7 @@ export function Editor({ slug }: { slug: string }) {
         </button>
       </div>
 
+      {warning && <div className="nb-alert nb-alert--warning">{warning}</div>}
       {error && <div className="nb-alert nb-alert--error">{error}</div>}
       {success && <div className="nb-alert nb-alert--success">{success}</div>}
 
