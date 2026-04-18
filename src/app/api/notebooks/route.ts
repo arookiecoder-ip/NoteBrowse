@@ -11,6 +11,8 @@ function normalizeSlug(input: string): string {
   return input.trim().toLowerCase().replace(/[\s_]+/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
 }
 
+const RESERVED_SLUGS = ["notebook", "editor", "api", "new", "unlock", "assets", "favicon", "_next"];
+
 export async function POST(request: Request): Promise<Response> {
   let body: Record<string, unknown>;
 
@@ -55,6 +57,10 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
+    if (RESERVED_SLUGS.includes(slug)) {
+      return NextResponse.json({ error: "That slug is reserved and cannot be used." }, { status: 400 });
+    }
+
     const existing = await prisma.notebook.findUnique({ where: { slug } });
     if (existing) {
       return NextResponse.json({ error: "That slug is already taken." }, { status: 409 });
@@ -80,7 +86,7 @@ export async function POST(request: Request): Promise<Response> {
   rateLimitCreateRecord(ip);
 
   return NextResponse.json(
-    { slug, privateLink: `/notebook/${slug}` },
+    { slug, privateLink: `/${slug}` },
     { status: 201 },
   );
 }

@@ -32,8 +32,8 @@ export default function RootLayout({
             NoteBrowse
           </a>
           <nav className="nb-header__nav">
-            <a href="/notebook/new" className="nb-btn nb-btn--ghost">Create</a>
-            <a href="/notebook/unlock" className="nb-btn nb-btn--ghost">Unlock</a>
+            <a href="/new" className="nb-btn nb-btn--ghost">Create</a>
+            <a href="/unlock" className="nb-btn nb-btn--ghost">Unlock</a>
           </nav>
         </header>
         <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>{children}</main>

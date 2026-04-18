@@ -31,10 +31,10 @@ async function EditorPageInner({ paramsPromise }: { paramsPromise: Promise<{ slu
               </p>
             </div>
             <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-              <a href="/notebook/new" className="nb-btn nb-btn--primary nb-btn--full" style={{ textAlign: "center" }}>
+              <a href="/new" className="nb-btn nb-btn--primary nb-btn--full" style={{ textAlign: "center" }}>
                 Create a New Notebook
               </a>
-              <a href="/notebook/unlock" className="nb-btn nb-btn--secondary nb-btn--full" style={{ textAlign: "center" }}>
+              <a href="/unlock" className="nb-btn nb-btn--secondary nb-btn--full" style={{ textAlign: "center" }}>
                 Unlock an Existing Notebook
               </a>
             </div>

@@ -17,6 +17,8 @@ type EditorTab = "write" | "preview";
 
 export function Editor({ slug }: { slug: string }) {
   const [content, setContent] = useState("");
+  const [originalContent, setOriginalContent] = useState("");
+  const isDirty = content !== originalContent;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -48,6 +50,7 @@ export function Editor({ slug }: { slug: string }) {
         }
 
         setContent(data.content ?? "");
+        setOriginalContent(data.content ?? "");
         if (data.warning) setWarning(data.warning);
         setLoading(false);
       })
@@ -61,10 +64,37 @@ export function Editor({ slug }: { slug: string }) {
     return () => { cancelled = true; };
   }, [slug]);
 
-  async function handleSave() {
+  // Autosave
+  useEffect(() => {
+    if (!isDirty || saving || error) return;
+
+    const timer = setTimeout(() => {
+      handleSave(true);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content, isDirty, saving, error]);
+
+  // Prevent accidental closure
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  async function handleSave(isAutosave = false) {
+    const contentToSave = content;
     setSaving(true);
-    setError(null);
-    setSuccess(null);
+    if (!isAutosave) {
+      setError(null);
+      setSuccess(null);
+    }
 
     const csrf = readCookie("nb_csrf");
     const res = await fetch(`/api/notebooks/${slug}`, {
@@ -73,7 +103,7 @@ export function Editor({ slug }: { slug: string }) {
         "Content-Type": "application/json",
         ...(csrf ? { "x-csrf-token": csrf } : {}),
       },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content: contentToSave }),
     });
 
     const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -81,7 +111,11 @@ export function Editor({ slug }: { slug: string }) {
     if (!res.ok) {
       setError(data.error ?? "Failed to save.");
     } else {
-      setSuccess("Changes saved.");
+      setOriginalContent(contentToSave);
+      if (!isAutosave) {
+        setSuccess("Changes saved.");
+        setTimeout(() => setSuccess(null), 3000);
+      }
     }
     setSaving(false);
   }
@@ -149,7 +183,7 @@ export function Editor({ slug }: { slug: string }) {
     setSuccess("Notebook deleted. Redirecting...");
     setShowDelete(false);
     setDeleting(false);
-    setTimeout(() => window.location.assign("/notebook/new"), 500);
+    setTimeout(() => window.location.assign("/new"), 500);
   }
 
   if (loading) {
@@ -160,7 +194,7 @@ export function Editor({ slug }: { slug: string }) {
     return (
       <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 16 }}>
         <div className="nb-alert nb-alert--error">{error}</div>
-        <a href="/notebook/unlock" className="nb-btn nb-btn--secondary">Go to Unlock</a>
+        <a href="/unlock" className="nb-btn nb-btn--secondary">Go to Unlock</a>
       </div>
     );
   }
@@ -228,9 +262,9 @@ export function Editor({ slug }: { slug: string }) {
         )}
       </div>
 
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <button type="button" onClick={handleSave} disabled={saving || deleting} className="nb-btn nb-btn--primary">
-          {saving ? "Saving..." : "Save Changes"}
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+        <button type="button" onClick={() => handleSave(false)} disabled={saving || deleting || (!isDirty && !saving)} className="nb-btn nb-btn--primary">
+          {saving ? "Saving..." : isDirty ? "Save Changes*" : "Saved"}
         </button>
         <button type="button" onClick={() => setShowChangePassword(true)} disabled={saving || deleting} className="nb-btn nb-btn--secondary">
           Change Password

@@ -56,7 +56,7 @@ export async function POST(request: Request): Promise<Response> {
   const csrfToken = issueCsrfToken();
 
   const response = NextResponse.json(
-    { unlocked: true, notebookLink: `/editor/${slug}` },
+    { unlocked: true, notebookLink: `/${slug}` },
     { status: 200 },
   );
 

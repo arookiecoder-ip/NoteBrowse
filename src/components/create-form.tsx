@@ -40,7 +40,7 @@ export function CreateForm() {
       return;
     }
 
-    const link = data.privateLink ?? `/notebook/${data.slug}`;
+    const link = data.privateLink ?? `/${data.slug}`;
     setStatus("success");
     setCreatedLink(link);
     setMessage("Notebook created successfully!");

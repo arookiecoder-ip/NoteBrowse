@@ -16,10 +16,10 @@ export default function HomePage() {
             Create encrypted notebooks secured behind private links and passwords. No accounts, no tracking — just write.
           </p>
           <div className="nb-hero__actions">
-            <a href="/notebook/new" className="nb-btn nb-btn--primary nb-btn--lg">
+            <a href="/new" className="nb-btn nb-btn--primary nb-btn--lg">
               Create Notebook
             </a>
-            <a href="/notebook/unlock" className="nb-btn nb-btn--secondary nb-btn--lg">
+            <a href="/unlock" className="nb-btn nb-btn--secondary nb-btn--lg">
               Unlock Notebook
             </a>
           </div>

@@ -106,8 +106,8 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
     }
   }
 
-  // NOTE: Session guard for /editor/* pages is now handled server-side
-  // in src/app/editor/[slug]/page.tsx, which checks notebook existence
+  // NOTE: Session guard for notebook pages is handled server-side
+  // in src/app/[slug]/page.tsx, which checks notebook existence
   // and session validity to show the appropriate UI (editor, password
   // form, or "not found").
 
@@ -115,5 +115,5 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
 }
 
 export const config = {
-  matcher: ["/", "/notebook/:path*", "/editor/:path*", "/api/notebooks/:path*"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

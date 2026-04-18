@@ -17,8 +17,8 @@ export default function NotFound() {
             This notebook doesn&apos;t exist or may have been deleted.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <Link href="/notebook/new" className="nb-btn nb-btn--primary">Create Notebook</Link>
-            <Link href="/notebook/unlock" className="nb-btn nb-btn--secondary">Unlock Existing</Link>
+            <Link href="/new" className="nb-btn nb-btn--primary">Create Notebook</Link>
+            <Link href="/unlock" className="nb-btn nb-btn--secondary">Unlock Existing</Link>
           </div>
         </div>
       </div>
