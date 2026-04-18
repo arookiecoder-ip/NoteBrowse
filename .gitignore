@@ -34,6 +34,7 @@ yarn-error.log*
 # IDEs
 .vscode/
 .idea/
+.obsidian/
 
 # Tooling & Planning (Private)
 .code-review-graph/
