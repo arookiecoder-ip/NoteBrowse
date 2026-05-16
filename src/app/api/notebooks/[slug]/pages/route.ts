@@ -74,6 +74,7 @@ export async function POST(
       contentCiphertext: encrypted.ciphertext,
       contentNonce: encrypted.nonce,
       contentKeyVersion: encrypted.keyVersion,
+      updatedAt: new Date(),
     },
   });
 

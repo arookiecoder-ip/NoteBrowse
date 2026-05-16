@@ -85,6 +85,7 @@ export async function POST(request: Request): Promise<Response> {
           contentCiphertext: encrypted.ciphertext,
           contentNonce: encrypted.nonce,
           contentKeyVersion: encrypted.keyVersion,
+          updatedAt: new Date(),
         },
       },
     },
