@@ -73,11 +73,13 @@ export async function POST(request: Request): Promise<Response> {
   const encrypted = encrypt(content);
   const pwHash = await hashPassword(password);
 
+  const now = new Date();
   await prisma.notebook.create({
     data: {
       slug,
       mode,
       passwordHash: pwHash,
+      updatedAt: now,
       pages: {
         create: {
           title: firstPageTitle || "Page 1",
@@ -85,7 +87,7 @@ export async function POST(request: Request): Promise<Response> {
           contentCiphertext: encrypted.ciphertext,
           contentNonce: encrypted.nonce,
           contentKeyVersion: encrypted.keyVersion,
-          updatedAt: new Date(),
+          updatedAt: now,
         },
       },
     },

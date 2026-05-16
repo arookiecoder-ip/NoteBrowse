@@ -166,7 +166,7 @@ export async function PATCH(
     }
     await prisma.notebook.update({
       where: { slug },
-      data: { passwordHash: await hashPassword(password) },
+      data: { passwordHash: await hashPassword(password), updatedAt: new Date() },
     });
     const response = NextResponse.json({ saved: true });
     refreshCookies(response, slug, context.csrfToken);
@@ -207,6 +207,7 @@ export async function PATCH(
     return NextResponse.json({ error: "No fields to update." }, { status: 400 });
   }
 
+  dataToUpdate.updatedAt = new Date();
   await prisma.page.update({ where: { id: pageId }, data: dataToUpdate });
 
   const ip = getIp(request);
@@ -267,7 +268,7 @@ export async function DELETE(
     await prisma.page.delete({ where: { id: pageId } });
     // Re-order remaining pages
     const remaining = notebook.pages.filter((p) => p.id !== pageId).sort((a, b) => a.order - b.order);
-    await Promise.all(remaining.map((p, i) => prisma.page.update({ where: { id: p.id }, data: { order: i } })));
+    await Promise.all(remaining.map((p, i) => prisma.page.update({ where: { id: p.id }, data: { order: i, updatedAt: new Date() } })));
 
     const response = NextResponse.json({ deleted: true });
     refreshCookies(response, slug, context.csrfToken);
