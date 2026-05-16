@@ -37,6 +37,10 @@ export function getPrisma(): Promise<PrismaClientType> {
     clientPromise = createPrismaClient().then((client) => {
       globalForPrisma.__prisma = client;
       return client;
+    }).catch((err) => {
+      // Reset so the next request retries instead of reusing a rejected promise
+      clientPromise = null;
+      throw err;
     });
   }
 
