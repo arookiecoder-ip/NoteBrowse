@@ -35,15 +35,32 @@ export async function POST(request: Request): Promise<Response> {
     throw err;
   }
 
-  const prisma = await getPrisma();
-  const notebook = await prisma.notebook.findUnique({ where: { slug } });
+  let prisma;
+  try {
+    prisma = await getPrisma();
+  } catch {
+    return NextResponse.json({ error: "Service unavailable. Please try again later." }, { status: 503 });
+  }
+
+  let notebook;
+  try {
+    notebook = await prisma.notebook.findUnique({ where: { slug } });
+  } catch {
+    return NextResponse.json({ error: "Service unavailable. Please try again later." }, { status: 503 });
+  }
 
   if (!notebook) {
     rateLimitFail(ip, slug);
     return NextResponse.json({ error: "Invalid notebook link or password." }, { status: 401 });
   }
 
-  const passwordValid = await verifyPassword(password, notebook.passwordHash);
+  let passwordValid: boolean;
+  try {
+    passwordValid = await verifyPassword(password, notebook.passwordHash);
+  } catch {
+    return NextResponse.json({ error: "Service unavailable. Please try again later." }, { status: 503 });
+  }
+
   if (!passwordValid) {
     rateLimitFail(ip, slug);
     return NextResponse.json({ error: "Invalid notebook link or password." }, { status: 401 });
@@ -51,30 +68,36 @@ export async function POST(request: Request): Promise<Response> {
 
   rateLimitReset(ip, slug);
 
-  const expiresAt = Date.now() + IDLE_TIMEOUT_MS;
-  const sessionCookie = signSessionCookie({ slug, expiresAt });
-  const csrfToken = issueCsrfToken();
+  let sessionCookie: string;
+  let csrfToken: string;
+  try {
+    const expiresAt = Date.now() + IDLE_TIMEOUT_MS;
+    sessionCookie = signSessionCookie({ slug, expiresAt });
+    csrfToken = issueCsrfToken();
 
-  const response = NextResponse.json(
-    { unlocked: true, notebookLink: `/${slug}` },
-    { status: 200 },
-  );
+    const response = NextResponse.json(
+      { unlocked: true, notebookLink: `/${slug}` },
+      { status: 200 },
+    );
 
-  response.cookies.set(SESSION_COOKIE, sessionCookie, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/",
-    expires: new Date(expiresAt),
-  });
+    response.cookies.set(SESSION_COOKIE, sessionCookie, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      expires: new Date(expiresAt),
+    });
 
-  response.cookies.set(CSRF_COOKIE, csrfToken, {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/",
-    expires: new Date(expiresAt),
-  });
+    response.cookies.set(CSRF_COOKIE, csrfToken, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      expires: new Date(expiresAt),
+    });
 
-  return response;
+    return response;
+  } catch {
+    return NextResponse.json({ error: "Service unavailable. Please try again later." }, { status: 503 });
+  }
 }

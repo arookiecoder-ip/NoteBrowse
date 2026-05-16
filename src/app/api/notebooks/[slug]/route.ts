@@ -62,24 +62,40 @@ export async function GET(
     return NextResponse.json({ error: "Session expired." }, { status: 401 });
   }
 
-  const prisma = await getPrisma();
-  const notebook = await prisma.notebook.findUnique({
-    where: { slug },
-    include: { pages: { orderBy: { order: "asc" } } },
-  });
+  let prisma;
+  try {
+    prisma = await getPrisma();
+  } catch {
+    return NextResponse.json({ error: "Service unavailable. Please try again later." }, { status: 503 });
+  }
+
+  let notebook;
+  try {
+    notebook = await prisma.notebook.findUnique({
+      where: { slug },
+      include: { pages: { orderBy: { order: "asc" } } },
+    });
+  } catch {
+    return NextResponse.json({ error: "Service unavailable. Please try again later." }, { status: 503 });
+  }
+
   if (!notebook) {
     return NextResponse.json({ error: "Notebook not found." }, { status: 404 });
   }
 
   const ip = getIp(request);
-  await prisma.auditLog.create({
-    data: {
-      eventType: "notebook_viewed",
-      notebookId: notebook.id,
-      sessionId: `signed:${slug}`,
-      ipHash: hashIp(ip),
-    },
-  });
+  try {
+    await prisma.auditLog.create({
+      data: {
+        eventType: "notebook_viewed",
+        notebookId: notebook.id,
+        sessionId: `signed:${slug}`,
+        ipHash: hashIp(ip),
+      },
+    });
+  } catch {
+    // Non-fatal: audit log failure should not block notebook access
+  }
 
   const pages = notebook.pages.map((page) => {
     let content = "";
