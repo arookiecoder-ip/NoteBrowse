@@ -25,6 +25,7 @@ export async function POST(request: Request): Promise<Response> {
   const mode = body.mode === "random" ? "random" : "custom";
   const password = typeof body.password === "string" ? body.password : "";
   const content = typeof body.content === "string" ? body.content : "";
+  const firstPageTitle = typeof body.firstPageTitle === "string" ? body.firstPageTitle.trim() : "Page 1";
 
   if (!content) {
     return NextResponse.json({ error: "Content is required." }, { status: 400 });
@@ -77,9 +78,15 @@ export async function POST(request: Request): Promise<Response> {
       slug,
       mode,
       passwordHash: pwHash,
-      contentCiphertext: encrypted.ciphertext,
-      contentNonce: encrypted.nonce,
-      contentKeyVersion: encrypted.keyVersion,
+      pages: {
+        create: {
+          title: firstPageTitle || "Page 1",
+          order: 0,
+          contentCiphertext: encrypted.ciphertext,
+          contentNonce: encrypted.nonce,
+          contentKeyVersion: encrypted.keyVersion,
+        },
+      },
     },
   });
 

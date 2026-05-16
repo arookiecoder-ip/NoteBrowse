@@ -7,16 +7,29 @@ datasource db {
 }
 
 model Notebook {
-  id                 String   @id @default(cuid())
-  slug               String   @unique
-  mode               String
-  passwordHash       String
-  contentCiphertext  String
-  contentNonce       String
-  contentKeyVersion  Int      @default(1)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  auditLogs          AuditLog[]
+  id           String     @id @default(cuid())
+  slug         String     @unique
+  mode         String
+  passwordHash String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  auditLogs    AuditLog[]
+  pages        Page[]
+}
+
+model Page {
+  id                String   @id @default(cuid())
+  notebookId        String
+  title             String   @default("Untitled")
+  order             Int      @default(0)
+  contentCiphertext String
+  contentNonce      String
+  contentKeyVersion Int      @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  notebook          Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+
+  @@index([notebookId, order])
 }
 
 model AuditLog {

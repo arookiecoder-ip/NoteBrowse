@@ -50,7 +50,7 @@ function getIp(request: Request): string {
   return "unknown";
 }
 
-// ── GET: read notebook content ──────────────────────────────────────
+// ── GET: read notebook with all pages ───────────────────────────────
 
 export async function GET(
   request: Request,
@@ -63,7 +63,10 @@ export async function GET(
   }
 
   const prisma = await getPrisma();
-  const notebook = await prisma.notebook.findUnique({ where: { slug } });
+  const notebook = await prisma.notebook.findUnique({
+    where: { slug },
+    include: { pages: { orderBy: { order: "asc" } } },
+  });
   if (!notebook) {
     return NextResponse.json({ error: "Notebook not found." }, { status: 404 });
   }
@@ -78,31 +81,31 @@ export async function GET(
     },
   });
 
-  let content = "";
-  let decryptionWarning: string | undefined;
-
-  try {
-    content = decrypt({
-      ciphertext: notebook.contentCiphertext,
-      nonce: notebook.contentNonce,
-      keyVersion: notebook.contentKeyVersion,
-    });
-  } catch (err) {
-    console.error(`[decrypt] Failed for slug="${slug}":`, (err as Error).message);
-    decryptionWarning = `Content could not be decrypted. It may have been created with a different encryption key. Exact Error: ${(err as Error).message}`;
-  }
+  const pages = notebook.pages.map((page) => {
+    let content = "";
+    let warning: string | undefined;
+    try {
+      content = decrypt({
+        ciphertext: page.contentCiphertext,
+        nonce: page.contentNonce,
+        keyVersion: page.contentKeyVersion,
+      });
+    } catch (err) {
+      warning = `Page "${page.title}" could not be decrypted: ${(err as Error).message}`;
+    }
+    return { id: page.id, title: page.title, order: page.order, content, warning };
+  });
 
   const response = NextResponse.json({
     slug,
-    content,
+    pages,
     updatedAt: notebook.updatedAt.toISOString(),
-    ...(decryptionWarning ? { warning: decryptionWarning } : {}),
   });
   refreshCookies(response, slug, context.csrfToken);
   return response;
 }
 
-// ── PATCH: update notebook content ──────────────────────────────────
+// ── PATCH: update notebook (content/password) or a specific page ────
 
 export async function PATCH(
   request: Request,
@@ -121,28 +124,18 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
 
-  const content = typeof body.content === "string" ? body.content : undefined;
-  const password = typeof body.password === "string" ? body.password : undefined;
-  const oldPassword = typeof body.oldPassword === "string" ? body.oldPassword : undefined;
-
-  if (content === undefined && password === undefined) {
-    return NextResponse.json({ error: "No fields to update." }, { status: 400 });
-  }
-
   const prisma = await getPrisma();
-  const notebook = await prisma.notebook.findUnique({ where: { slug } });
+  const notebook = await prisma.notebook.findUnique({
+    where: { slug },
+    include: { pages: { orderBy: { order: "asc" } } },
+  });
   if (!notebook) {
     return NextResponse.json({ error: "Notebook not found." }, { status: 404 });
   }
 
-  const dataToUpdate: any = {};
-
-  if (content !== undefined) {
-    const encrypted = encrypt(content);
-    dataToUpdate.contentCiphertext = encrypted.ciphertext;
-    dataToUpdate.contentNonce = encrypted.nonce;
-    dataToUpdate.contentKeyVersion = encrypted.keyVersion;
-  }
+  // ── Password change ──
+  const password = typeof body.password === "string" ? body.password : undefined;
+  const oldPassword = typeof body.oldPassword === "string" ? body.oldPassword : undefined;
 
   if (password !== undefined) {
     if (!oldPassword) {
@@ -152,17 +145,53 @@ export async function PATCH(
     if (!isValid) {
       return NextResponse.json({ error: "Incorrect old password." }, { status: 403 });
     }
-
     if (password.trim() === "") {
       return NextResponse.json({ error: "New password cannot be empty." }, { status: 400 });
     }
-    dataToUpdate.passwordHash = await hashPassword(password);
+    await prisma.notebook.update({
+      where: { slug },
+      data: { passwordHash: await hashPassword(password) },
+    });
+    const response = NextResponse.json({ saved: true });
+    refreshCookies(response, slug, context.csrfToken);
+    return response;
   }
 
-  await prisma.notebook.update({
-    where: { slug },
-    data: dataToUpdate,
-  });
+  // ── Page content update ──
+  const pageId = typeof body.pageId === "string" ? body.pageId : undefined;
+  const content = typeof body.content === "string" ? body.content : undefined;
+  const title = typeof body.title === "string" ? body.title : undefined;
+
+  if (!pageId) {
+    return NextResponse.json({ error: "pageId is required." }, { status: 400 });
+  }
+
+  const page = notebook.pages.find((p) => p.id === pageId);
+  if (!page) {
+    return NextResponse.json({ error: "Page not found." }, { status: 404 });
+  }
+
+  const dataToUpdate: Record<string, unknown> = {};
+
+  if (content !== undefined) {
+    const encrypted = encrypt(content);
+    dataToUpdate.contentCiphertext = encrypted.ciphertext;
+    dataToUpdate.contentNonce = encrypted.nonce;
+    dataToUpdate.contentKeyVersion = encrypted.keyVersion;
+  }
+
+  if (title !== undefined) {
+    if (title.trim() === "") {
+      return NextResponse.json({ error: "Page title cannot be empty." }, { status: 400 });
+    }
+    dataToUpdate.title = title.trim();
+  }
+
+  if (Object.keys(dataToUpdate).length === 0) {
+    return NextResponse.json({ error: "No fields to update." }, { status: 400 });
+  }
+
+  await prisma.page.update({ where: { id: pageId }, data: dataToUpdate });
 
   const ip = getIp(request);
   await prisma.auditLog.create({
@@ -179,7 +208,7 @@ export async function PATCH(
   return response;
 }
 
-// ── DELETE: permanently delete notebook ─────────────────────────────
+// ── DELETE: delete notebook or a specific page ───────────────────────
 
 export async function DELETE(
   request: Request,
@@ -198,17 +227,42 @@ export async function DELETE(
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
 
-  if (body.confirmDelete !== true) {
-    return NextResponse.json({ error: "Delete confirmation required." }, { status: 400 });
-  }
-
   const prisma = await getPrisma();
-  const notebook = await prisma.notebook.findUnique({ where: { slug } });
+  const notebook = await prisma.notebook.findUnique({
+    where: { slug },
+    include: { pages: true },
+  });
   if (!notebook) {
     return NextResponse.json({ error: "Notebook not found." }, { status: 404 });
   }
 
   const ip = getIp(request);
+
+  // ── Delete a single page ──
+  const pageId = typeof body.pageId === "string" ? body.pageId : undefined;
+  if (pageId) {
+    if (notebook.pages.length <= 1) {
+      return NextResponse.json({ error: "Cannot delete the last page. Delete the notebook instead." }, { status: 400 });
+    }
+    const page = notebook.pages.find((p) => p.id === pageId);
+    if (!page) {
+      return NextResponse.json({ error: "Page not found." }, { status: 404 });
+    }
+    await prisma.page.delete({ where: { id: pageId } });
+    // Re-order remaining pages
+    const remaining = notebook.pages.filter((p) => p.id !== pageId).sort((a, b) => a.order - b.order);
+    await Promise.all(remaining.map((p, i) => prisma.page.update({ where: { id: p.id }, data: { order: i } })));
+
+    const response = NextResponse.json({ deleted: true });
+    refreshCookies(response, slug, context.csrfToken);
+    return response;
+  }
+
+  // ── Delete entire notebook ──
+  if (body.confirmDelete !== true) {
+    return NextResponse.json({ error: "Delete confirmation required." }, { status: 400 });
+  }
+
   await prisma.auditLog.create({
     data: {
       eventType: "notebook_deleted",

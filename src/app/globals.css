@@ -1259,6 +1259,101 @@ body {
   }
 }
 
+/* ─── Pages Bar ─── */
+.nb-pages-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 10px;
+}
+
+.nb-pages-list {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.nb-page-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  transition: all var(--duration-fast) var(--ease-out);
+  cursor: pointer;
+}
+
+.nb-page-tab:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+}
+
+.nb-page-tab--active {
+  background: rgba(228, 175, 68, 0.1);
+  border-color: rgba(228, 175, 68, 0.3);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.nb-page-tab__title {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nb-page-tab__rename-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--accent-text);
+  color: var(--text-primary);
+  font: inherit;
+  outline: none;
+  width: 100px;
+  padding: 0;
+}
+
+.nb-page-tab__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  opacity: 0.5;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.nb-page-tab__delete:hover {
+  opacity: 1;
+  color: var(--destructive);
+}
+
+.nb-pages-add {
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
 /* ─── Editor Tabs & Toolbar ─── */
 .nb-editor-header {
   display: flex;
